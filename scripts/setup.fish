@@ -13,14 +13,11 @@ set -g selected_tools
 
 source "$script_dir/lib/index.fish"
 
-set -l discovered_tools (discover_tools "$script_dir/tools")
-if test (count $discovered_tools) -eq 0
+set -g available_tools (discover_tools "$script_dir/tools")
+if test (count $available_tools) -eq 0
     error "No tool modules found in $script_dir/tools"
     exit 1
 end
-
-set -g available_tools $discovered_tools
-
 set -g __completed_tools
 
 function tool_dependencies --argument-names tool

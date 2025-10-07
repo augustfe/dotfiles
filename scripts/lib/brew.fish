@@ -20,12 +20,10 @@ function install_formula --argument-names formula
         return 0
     end
 
+    log "Installing $formula"
     if test $dry_run -eq 1
-        log "Would install formula $formula"
         return 0
     end
-
-    log "Installing $formula"
     command brew install $formula
 end
 
@@ -40,12 +38,10 @@ function install_cask --argument-names cask
         return 0
     end
 
+    log "Installing Cask $cask"
     if test $dry_run -eq 1
-        log "Would install cask $cask"
         return 0
     end
-
-    log "Installing Cask $cask"
     command brew install --cask $cask
 end
 

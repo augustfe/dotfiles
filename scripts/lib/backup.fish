@@ -21,9 +21,9 @@ function confirm_backup --argument-names path
         end
 
         switch (string lower -- $reply_trim)
-            case 'y'
+            case y
                 return 0
-            case 'n'
+            case n
                 return 1
         end
 
@@ -50,12 +50,10 @@ function backup_target --argument-names target tool_name
     set backup_dir "$home_config/.backup/$tool_name/$timestamp"
     set backup_destination "$backup_dir/"(basename "$target")
 
+    echo $backup_destination
     if test $dry_run -eq 1
-        echo $backup_destination
         return 0
     end
-
     command mkdir -p "$backup_dir"
     command mv "$target" "$backup_dir/"
-    echo $backup_destination
 end

@@ -1,4 +1,4 @@
-# augustfe dotfiles
+# dotfiles
 
 This repository tracks the configuration files from `~/.config` along with two larger components maintained as Git submodules.
 
@@ -19,7 +19,7 @@ cd dotfiles
 ./bootstrap.sh
 
 # Bootstrap tools & configs (interactive by default)
-fish scripts/setup.fish --all
+fish scripts/setup.fish
 
 # Preview changes without modifying the system
 fish scripts/setup.fish --dry-run --all

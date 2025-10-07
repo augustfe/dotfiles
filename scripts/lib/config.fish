@@ -5,12 +5,10 @@ function ensure_config_home
         return 0
     end
 
+    log "Creating directory $home_config"
     if test $dry_run -eq 1
-        log "Would create directory $home_config"
         return 0
     end
-
-    log "Creating directory $home_config"
     command mkdir -p "$home_config"
 end
 
@@ -83,10 +81,8 @@ function sync_config --argument-names relative tool_name
 
     set dest_parent (dirname "$dst")
     if not test -d "$dest_parent"
-        if test $dry_run -eq 1
-            log "Would create directory $dest_parent"
-        else
-            log "Creating directory $dest_parent"
+        log "Creating directory $dest_parent"
+        if test $dry_run -eq 0
             command mkdir -p "$dest_parent"
         end
     end
@@ -100,11 +96,7 @@ function sync_config --argument-names relative tool_name
         end
 
         if test -n "$backup"
-            if test $dry_run -eq 1
-                log "Would back up existing $relative to $backup"
-            else
-                log "Backed up existing $relative to $backup"
-            end
+            log "Backed up existing $relative to $backup"
         end
     end
 

@@ -5,12 +5,10 @@ function ensure_submodules
         return
     end
 
+    log "Updating git submodules"
     if test $dry_run -eq 1
-        log "Would update git submodules"
         return
     end
-
-    log "Updating git submodules"
     command git -C "$repo_root" submodule update --init --recursive
 end
 
