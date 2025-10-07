@@ -15,11 +15,14 @@ This repository tracks the configuration files from `~/.config` along with two l
 git clone git@github.com:augustfe/dotfiles.git
 cd dotfiles
 
-# Pull nested configuration
-git submodule update --init --recursive
+# Bootstrap tools & configs (interactive by default)
+./scripts/setup.fish --all
+
+# Preview changes without modifying the system
+./scripts/setup.fish --dry-run --all
 ```
 
-After cloning, link the configurations into place (e.g. using GNU Stow or manual symlinks) so that they appear under `~/.config`.
+The bootstrap script checks for Homebrew, pulls submodules, installs each selected tool, and copies the matching config into `~/.config` (creating timestamped backups when something already exists). Omit `--all` to be prompted or pass `--tool <name>` for a targeted setup. Add `--dry-run` to see what would happen without touching your system. When no tools are specified, you'll get an interactive [`fzf`](https://github.com/junegunn/fzf) multi-select (the script falls back to a simple prompt if `fzf` isn't available).
 
 ## Adding new configuration
 
