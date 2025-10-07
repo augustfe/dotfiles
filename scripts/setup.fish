@@ -10,12 +10,16 @@ set -g home_config "$HOME/.config"
 set -g assume_yes 0
 set -g dry_run 0
 set -g selected_tools
-set -g available_tools fastfetch gh starship uv wezterm fish nvim
 
-source "$script_dir/lib/helpers.fish"
-for tool in $available_tools
-    source "$script_dir/tools/$tool.fish"
+source "$script_dir/lib/index.fish"
+
+set -l discovered_tools (discover_tools "$script_dir/tools")
+if test (count $discovered_tools) -eq 0
+    error "No tool modules found in $script_dir/tools"
+    exit 1
 end
+
+set -g available_tools $discovered_tools
 
 set -g __completed_tools
 
@@ -79,7 +83,7 @@ end
 
 function parse_args
     set -l argv $argv
-    argparse 'h/help' 'a/all' 't/tool=+' 'y/yes' 'd/dry-run' -- $argv; or begin
+    argparse h/help a/all 't/tool=+' y/yes d/dry-run -- $argv; or begin
         usage
         return 1
     end
@@ -192,7 +196,7 @@ if test (count $failures) -gt 0
 end
 
 if test $dry_run -eq 1
-    log "[dry-run] Completed without making changes."
+    log "Completed without making changes."
 else
     log "All selected tools configured successfully."
 end

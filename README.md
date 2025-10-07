@@ -25,7 +25,17 @@ fish scripts/setup.fish --all
 fish scripts/setup.fish --dry-run --all
 ```
 
-`bootstrap.sh` uses the official Homebrew installer and then installs the `fish` shell so subsequent runs of the Fish-based tooling can assume Homebrew is available. The main setup script pulls submodules, installs each selected tool, and copies the matching config into `~/.config` (creating timestamped backups when something already exists). Omit `--all` to be prompted or pass `--tool <name>` for a targeted setup. Add `--dry-run` to see what would happen without touching your system. When no tools are specified, you'll get an interactive [`fzf`](https://github.com/junegunn/fzf) multi-select (the script will offer to install `fzf` if it's missing).
+`bootstrap.sh` uses the official Homebrew installer and then installs the `fish` shell so subsequent runs of the Fish-based tooling can assume Homebrew is available. The main setup script pulls submodules, installs each selected tool, and copies the matching config into `~/.config`. When an existing config is detected it's moved into `~/.config/.backup/<tool>/<timestamp>/`, preserving every version created by the bootstrapper. Omit `--all` to be prompted or pass `--tool <name>` for a targeted setup. Add `--dry-run` to see what would happen without touching your system. When no tools are specified, you'll get an interactive [`fzf`](https://github.com/junegunn/fzf) multi-select (the script will offer to install `fzf` if it's missing).
+
+### Cleaning up backups
+
+Backups accumulate over time under `~/.config/.backup`. Run the helper script below to review and optionally delete the stored snapshots tool-by-tool:
+
+```bash
+fish scripts/cleanup_backups.fish
+```
+
+Use `--dry-run` to preview deletions or `--yes` to remove everything without prompting.
 
 ## Adding new configuration
 
