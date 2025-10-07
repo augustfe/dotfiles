@@ -10,7 +10,7 @@ set -g home_config "$HOME/.config"
 set -g assume_yes 0
 set -g dry_run 0
 set -g selected_tools
-set -g available_tools fastfetch gh ghc raycast starship uv wezterm fish nvim
+set -g available_tools fastfetch gh starship uv wezterm fish nvim
 
 source "$script_dir/lib/helpers.fish"
 for tool in $available_tools
@@ -111,6 +111,11 @@ function normalize_selected_tools
         return 0
     end
 
+    if test (count $selected_tools) -eq 0
+        set -e selected_tools
+        return 0
+    end
+
     set -l filtered
     set -l invalid
     for tool in $selected_tools
@@ -135,6 +140,10 @@ function normalize_selected_tools
 end
 
 parse_args $argv; or exit 1
+
+# Ensure we can find Homebrew-installed binaries (like fzf) before prompting.
+load_brew_env
+
 normalize_selected_tools; or begin
     usage
     error "No valid tools selected; exiting."
@@ -142,9 +151,19 @@ normalize_selected_tools; or begin
 end
 
 if not set -q selected_tools
+    ensure_fzf; or begin
+        error "fzf is required for interactive selection. Install it or supply --tool/--all."
+        exit 1
+    end
     set -l selection (prompt_for_tools)
+
     set -l prompt_status $status
-    if test $prompt_status -ne 0 -o (count $selection) -eq 0
+    if test $prompt_status -ne 0
+        usage
+        error "No tools selected; exiting."
+        exit 1
+    end
+    if test (count $selection) -eq 0
         usage
         error "No tools selected; exiting."
         exit 1
@@ -155,12 +174,6 @@ if not set -q selected_tools
         error "No valid tools selected; exiting."
         exit 1
     end
-end
-
-load_brew_env
-ensure_brew; or begin
-    error "Homebrew is required for this bootstrap script."
-    exit 1
 end
 
 ensure_submodules

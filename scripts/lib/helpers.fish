@@ -69,51 +69,6 @@ function load_brew_env
     end
 end
 
-function ensure_brew
-    if type -q brew
-        return 0
-    end
-
-    if test (uname) != "Darwin"
-        error "Homebrew installation requires macOS. Install your package manager manually."
-        return 1
-    end
-
-    if test $dry_run -eq 1
-        log "[dry-run] Would install Homebrew"
-        return 0
-    end
-
-    if not command -q curl
-        error "curl is required to install Homebrew. Install curl and re-run."
-        return 1
-    end
-
-    log "Installing Homebrew"
-    set installer (mktemp)
-    if not curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh -o "$installer"
-        error "Failed to download Homebrew installer"
-        command rm -f "$installer"
-        return 1
-    end
-
-    /bin/bash "$installer"
-    set status $status
-    command rm -f "$installer"
-    if test $status -ne 0
-        error "Homebrew installer exited with status $status"
-        return $status
-    end
-
-    load_brew_env
-    if not type -q brew
-        warn "Homebrew installed but not available in PATH; run 'eval (brew shellenv)' manually."
-        return 1
-    end
-
-    return 0
-end
-
 function install_formula --argument-names formula
     if not type -q brew
         error "Homebrew isn't ready; cannot install $formula"
@@ -163,6 +118,39 @@ function sync_config --argument-names relative
         return 0
     end
 
+    set -l needs_sync 1
+    if test -e "$dst"
+        if test -d "$src"
+            if test -d "$dst"
+                if command -q rsync
+                    set -l diff_output (command rsync -ani --delete --exclude '.git' --exclude '.gitmodules' --exclude '.DS_Store' "$src/" "$dst/")
+                    if test (count $diff_output) -eq 0
+                        set needs_sync 0
+                    end
+                else
+                    command diff -rq "$src" "$dst" >/dev/null
+                    if test $status -eq 0
+                        set needs_sync 0
+                    end
+                end
+            end
+        else if test -f "$dst"
+            command cmp -s "$src" "$dst"
+            if test $status -eq 0
+                set needs_sync 0
+            end
+        end
+    end
+
+    if test $needs_sync -eq 0
+        if test $dry_run -eq 1
+            log "[dry-run] $relative already up to date; skipping backup & sync."
+        else
+            log "$relative already up to date; skipping."
+        end
+        return 0
+    end
+
     ensure_config_home
     set dest_parent (dirname "$dst")
     if not test -d "$dest_parent"
@@ -173,18 +161,20 @@ function sync_config --argument-names relative
         end
     end
 
-    set -l backup (backup_target "$dst")
-    set -l backup_status $status
-    if test $backup_status -eq 1
-        warn "Skipped $relative per user request"
-        return 0
-    end
+    if test -e "$dst"
+        set -l backup (backup_target "$dst")
+        set -l backup_status $status
+        if test $backup_status -eq 1
+            warn "Skipped $relative per user request"
+            return 0
+        end
 
-    if test -n "$backup"
-        if test $dry_run -eq 1
-            log "[dry-run] Would back up existing $relative to $backup"
-        else
-            log "Backed up existing $relative to $backup"
+        if test -n "$backup"
+            if test $dry_run -eq 1
+                log "[dry-run] Would back up existing $relative to $backup"
+            else
+                log "Backed up existing $relative to $backup"
+            end
         end
     end
 
@@ -218,6 +208,20 @@ function sync_config --argument-names relative
     end
 end
 
+function ensure_fzf
+    if type -q fzf
+        return 0
+    end
+
+    log "Ensuring fzf is available for interactive selection"
+    install_formula fzf
+    set -l status_code $status
+    if test $status_code -eq 0
+        load_brew_env
+    end
+    return $status_code
+end
+
 function ensure_submodules
     if not test -f "$repo_root/.gitmodules"
         return
@@ -236,11 +240,14 @@ function prompt_for_tools
     if type -q fzf
         set -l header "Select tools (TAB to toggle, ENTER to confirm)"
         set -l selected (printf '%s\n' $available_tools | fzf --multi --ansi --prompt "Tools ❯ " --header "$header" --height=40% --border)
-        set -l status $status
-        if test $status -ne 0 -o (count $selected) -eq 0
+        set -l selection_status $status
+        if test $selection_status -ne 0
             return 1
         end
-        echo $selected
+        if test (count $selected) -eq 0
+            return 1
+        end
+        printf '%s\n' $selected
         return 0
     end
 

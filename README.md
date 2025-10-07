@@ -10,19 +10,22 @@ This repository tracks the configuration files from `~/.config` along with two l
 
 ## Getting started
 
-```fish
+```bash
 # Clone the main repository
 git clone git@github.com:augustfe/dotfiles.git
 cd dotfiles
 
+# Install Homebrew and fish (one-time setup)
+./bootstrap.sh
+
 # Bootstrap tools & configs (interactive by default)
-./scripts/setup.fish --all
+fish scripts/setup.fish --all
 
 # Preview changes without modifying the system
-./scripts/setup.fish --dry-run --all
+fish scripts/setup.fish --dry-run --all
 ```
 
-The bootstrap script checks for Homebrew, pulls submodules, installs each selected tool, and copies the matching config into `~/.config` (creating timestamped backups when something already exists). Omit `--all` to be prompted or pass `--tool <name>` for a targeted setup. Add `--dry-run` to see what would happen without touching your system. When no tools are specified, you'll get an interactive [`fzf`](https://github.com/junegunn/fzf) multi-select (the script falls back to a simple prompt if `fzf` isn't available).
+`bootstrap.sh` uses the official Homebrew installer and then installs the `fish` shell so subsequent runs of the Fish-based tooling can assume Homebrew is available. The main setup script pulls submodules, installs each selected tool, and copies the matching config into `~/.config` (creating timestamped backups when something already exists). Omit `--all` to be prompted or pass `--tool <name>` for a targeted setup. Add `--dry-run` to see what would happen without touching your system. When no tools are specified, you'll get an interactive [`fzf`](https://github.com/junegunn/fzf) multi-select (the script will offer to install `fzf` if it's missing).
 
 ## Adding new configuration
 
