@@ -1,0 +1,10 @@
+# macOS clutter
+.DS_Store
+
+# Node/yarn caches
+node_modules/
+.config/raycast/
+.config/ghc/
+
+# Runtime state
+.config/iterm2/sockets/
