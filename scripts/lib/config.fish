@@ -114,19 +114,10 @@ function sync_config --argument-names relative tool_name
             command rm -rf "$dst"
         end
 
-        if not command -q rsync
-            warn "rsync not found; falling back to copy for $relative"
-            command cp -R "$src" "$dst"
-            set -l copy_status $status
-            if test $copy_status -ne 0
-                return $copy_status
-            end
-        else
-            command rsync -a --delete --exclude '.git' --exclude '.gitmodules' --exclude '.DS_Store' "$src/" "$dst/"
-            set -l rsync_status $status
-            if test $rsync_status -ne 0
-                return $rsync_status
-            end
+        command rsync -a --delete --exclude '.git' --exclude '.gitmodules' --exclude '.DS_Store' "$src/" "$dst/"
+        set -l rsync_status $status
+        if test $rsync_status -ne 0
+            return $rsync_status
         end
     else
         command cp "$src" "$dst"
