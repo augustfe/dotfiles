@@ -57,7 +57,7 @@ function sync_config --argument-names relative tool_name
     set dst "$home_config/$relative"
 
     if not test -e "$src"
-        warn "Skipping $relative: source $src not found"
+        warn "Skipping configs for $relative: source $src not found"
         return 0
     end
 
@@ -72,7 +72,7 @@ function sync_config --argument-names relative tool_name
     if test -e "$dst"
         configs_match "$src" "$dst"
         if test $status -eq 0
-            log "$relative already up to date; skipping."
+            log "Configs for $relative already up to date; skipping."
             return 0
         end
     end
@@ -110,17 +110,117 @@ function sync_config --argument-names relative tool_name
     end
 
     if test -d "$src"
-        command mkdir -p "$dst"
+        if test $dry_run -ne 1 -a -e "$dst"
+            command rm -rf "$dst"
+        end
+
         if not command -q rsync
             warn "rsync not found; falling back to copy for $relative"
-            command rm -rf "$dst"
             command cp -R "$src" "$dst"
+            set -l copy_status $status
+            if test $copy_status -ne 0
+                return $copy_status
+            end
         else
             command rsync -a --delete --exclude '.git' --exclude '.gitmodules' --exclude '.DS_Store' "$src/" "$dst/"
+            set -l rsync_status $status
+            if test $rsync_status -ne 0
+                return $rsync_status
+            end
         end
     else
         command cp "$src" "$dst"
+        set -l file_copy_status $status
+        if test $file_copy_status -ne 0
+            return $file_copy_status
+        end
     end
 
     log "Synced $relative"
+    return 0
+end
+
+function sync_fish_config
+    set relative fish
+    set tool_name fish
+    set src "$dotconfig/$relative"
+    set dst "$home_config/$relative"
+    set completions_dir "completions"
+
+    if not test -d "$src"
+        warn "Skipping fish config: source $src not found"
+        return 0
+    end
+
+    set -l fish_tool_name $tool_name
+
+    ensure_config_home
+
+    if test -e "$dst"
+        configs_match "$src" "$dst"
+        if test $status -eq 0
+            log "Fish configs already up to date; skipping."
+            return 0
+        end
+    end
+
+    set dest_parent (dirname "$dst")
+    if not test -d "$dest_parent"
+        log "Creating directory $dest_parent"
+        if test $dry_run -eq 0
+            command mkdir -p "$dest_parent"
+        end
+    end
+
+    set -l only_completions_diff 0
+    if test -d "$dst"; and command -q rsync
+        set -l diff_output (command rsync -ani --delete --exclude '.git' --exclude '.gitmodules' --exclude '.DS_Store' --exclude "$completions_dir/" "$src/" "$dst/")
+        if test (count $diff_output) -eq 0
+            set only_completions_diff 1
+        end
+    end
+
+    if test -e "$dst"
+        if test $only_completions_diff -eq 1
+            log "Skipping backup for fish; only completions differ."
+        else
+            set -l backup (backup_target "$dst" $fish_tool_name)
+            set -l backup_status $status
+            if test $backup_status -eq 1
+                warn "Skipped fish config per user request"
+                return 0
+            end
+
+            if test -n "$backup"
+                log "Backed up existing fish config to $backup"
+            end
+        end
+    end
+
+    if test $dry_run -eq 1
+        log "Would sync fish directory $src -> $dst (preserving completions)"
+        if test -d "$src/$completions_dir"
+            log "Would copy fish completions from $src/$completions_dir"
+        end
+        return 0
+    end
+
+    if not command -q rsync
+        error "rsync is required to sync fish config while preserving completions"
+        return 1
+    end
+
+    command mkdir -p "$dst"
+    command rsync -a --delete --exclude '.git' --exclude '.gitmodules' --exclude '.DS_Store' --exclude "$completions_dir/" "$src/" "$dst/"
+    set -l sync_status $status
+    if test $sync_status -ne 0
+        return $sync_status
+    end
+
+    if test -d "$src/$completions_dir"
+        command mkdir -p "$dst/$completions_dir"
+        command rsync -a "$src/$completions_dir/" "$dst/$completions_dir/"
+    end
+
+    log "Synced fish config"
 end

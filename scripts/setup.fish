@@ -145,6 +145,20 @@ parse_args $argv; or exit 1
 # Ensure we can find Homebrew-installed binaries (like fzf) before prompting.
 load_brew_env
 
+# Core dependencies required for bootstrap flow.
+set -l bootstrap_tools fzf rsync
+for bootstrap_tool in $bootstrap_tools
+    if not contains -- $bootstrap_tool $available_tools
+        continue
+    end
+
+    run_tool $bootstrap_tool "bootstrap dependency"
+    if test $status -ne 0
+        error "$bootstrap_tool is required; exiting."
+        exit 1
+    end
+end
+
 normalize_selected_tools; or begin
     usage
     error "No valid tools selected; exiting."
@@ -152,10 +166,6 @@ normalize_selected_tools; or begin
 end
 
 if not set -q selected_tools
-    ensure_fzf; or begin
-        error "fzf is required for interactive selection. Install it or supply --tool/--all."
-        exit 1
-    end
     set -l selection (prompt_for_tools)
 
     set -l prompt_status $status

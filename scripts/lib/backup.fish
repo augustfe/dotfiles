@@ -54,6 +54,13 @@ function backup_target --argument-names target tool_name
     if test $dry_run -eq 1
         return 0
     end
+
     command mkdir -p "$backup_dir"
-    command mv "$target" "$backup_dir/"
+
+    if test -d "$target"
+        command mkdir -p "$backup_destination"
+        command rsync -a "$target/" "$backup_destination/"
+    else
+        command cp -p "$target" "$backup_destination"
+    end
 end
